@@ -37,6 +37,15 @@ Object.CMD_BACK = 32
 Object.cmd = 0
 Object.dir = 0
 
+Object.dirs = table{
+	Object.CMD_LEFT,
+	Object.CMD_RIGHT,
+	Object.CMD_UP,
+	Object.CMD_DOWN,
+	Object.CMD_FWD,
+	Object.CMD_BACK,
+}
+
 local oppositeDir = {
 	[Object.CMD_LEFT] = Object.CMD_RIGHT,
 	[Object.CMD_RIGHT] = Object.CMD_LEFT,
@@ -59,7 +68,7 @@ function Object:update()
 			self.pos = self.destPos * self.moveFrac + self.srcPos * (1 - self.moveFrac)
 		end
 	else
-		for _,cmd in ipairs{self.CMD_LEFT, self.CMD_RIGHT, self.CMD_UP, self.CMD_DOWN, self.CMD_FWD, self.CMD_BACK} do
+		for _,cmd in ipairs(self.dirs) do
 			if cmd ~= oppositeDir[self.dir] then
 				if bit.band(self.cmd, cmd) ~= 0 then
 					if self:canMove(cmd) then
@@ -114,7 +123,7 @@ end
 function Object:draw()
 	gl.glColor3d(self.color:unpack())
 	gl.glPushMatrix()
-	gl.glTranslated(self.pos:unpack())
+	gl.glTranslated(self.game:transform(self.pos):unpack())
 	gl.glScaled(self.size:unpack())
 	cube:draw()
 	gl.glPopMatrix()
