@@ -21,8 +21,6 @@ App.title = 'ChompMan'
 
 function App:initGL(...)
 	App.super.initGL(self, ...)
-	
-	App.app = self	-- singleton
 
 	self.viewPos = vec3d(0, 0, 0)
 	self.viewAngle = 
@@ -48,7 +46,7 @@ function App:initGL(...)
 		end
 	end
 
-	self.game = Game()
+	self.game = Game{app=self}
 	self.viewDist = self.game.map.size.x
 	self.viewPos = vec3d(0,0,self.viewDist) + self.game.player.pos
 
@@ -155,7 +153,7 @@ function App:update()
 	gl.glTranslated((-self.viewPos):unpack())
 
 	gl.glDisable(gl.GL_DEPTH_TEST)
-	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE)
+	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 	gl.glEnable(gl.GL_BLEND)
 	gl.glColor4d(1,1,1,.05)
 

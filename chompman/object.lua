@@ -20,10 +20,12 @@ function Object:init(args)
 	self.srcPos = vec3d(self.pos:unpack())
 	self.destPos = vec3d(self.pos:unpack())
 
-	self.color = vec3d(
-		math.random(),
-		math.random(),
-		math.random()):normalize()
+	self.color = args.color 
+		and vec3d(args.color)
+		or vec3d(
+			math.random(),
+			math.random(),
+			math.random()):normalize()
 end
 
 Object.CMD_LEFT = 1
@@ -142,7 +144,7 @@ function Object:playSound(name, volume, pitch)
 		return
 	end
 
-	local sounds = require 'chompman.app'.app.sounds
+	local sounds = self.game.app.sounds
 	local sound = sounds:load('sounds/'..name..'.wav')
 	source:setBuffer(sound)
 	source:setGain((volume or 1) * game.volume)

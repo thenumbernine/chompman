@@ -145,67 +145,6 @@ function Map:init(args)
 end
 
 function Map:draw()
-	local app = require 'chompman.app'.app
-	local fwd = -vec3d(app.viewAngle:zAxis():unpack())
-	
-	-- how far from the player points are to be pushed out of the way 
-	local mvPushRadius = 3
-	-- coeff of how smooth they are pushed in 3D space
-	local push3DCoeff = 3
-	-- coeff of how smooth they are pushed in 2D space
-	local push2DCoeff = 3
-	
-	--[[ fixed radius
-	local screenPushRadius = .15
-	--]]
-	-- [[ this should be the screen distance of the modelview push radius at the player's distance from the camera
-	local player = self.game.player
-	local viewToPlayer = player.pos - app.viewPos
-	local playerDist = fwd:dot(viewToPlayer)
-	local screenPushRadius = mvPushRadius / playerDist
-	--]]
-
-	local function transform(vtx)
-		local distFromPlayer3DSq = (vtx - player.pos):lenSq()
-
-		vtx = vtx - app.viewPos	-- vtx is now relative to the view position 
-		
-		local vfwd = fwd:dot(vtx)	-- vertex screen depth 
-		vtx = vtx - fwd * vfwd	-- vtx is now in the view plane
-		vtx = vtx / vfwd
-		local screenDistSq = vtx:lenSq()
-	
-		-- pushInfl is whether we want to push the point outward
-		--[[ C0-continuous 
-		local pushExp = (distFromPlayer3DSq < mvPushRadius * mvPushRadius) and 0 or 1
-		--]]
-		-- [[ C-inf
-		local pushExp = .5 + .5 * math.tanh(push3DCoeff * (math.sqrt(distFromPlayer3DSq) - mvPushRadius))
-		--]]
-		
-		local screenDist = math.sqrt(screenDistSq)
-			
-		-- scale back, but with the near-screenPushRadius points pushed back past screenPushRadius
-		-- using a ramp function
-		--[[ C0 option would be:
-		local scale = math.max(screenPushRadius, screenDist) / screenDist
-		--]]
-		-- [[ C-inf option:
-		local scale = (screenPushRadius 
-				+ math.log(1 
-					+ math.exp(push2DCoeff * (screenDist - screenPushRadius))
-				) / push2DCoeff
-			) / screenDist
-		--]]
-		vtx = vtx * math.pow(scale, pushExp)
-		
-		vtx = vtx * vfwd	
-		vtx = vtx + fwd * vfwd
-
-		vtx = vtx + app.viewPos
-		return vtx
-	end
-
 	-- TODO - use call lists and do this as a vertex shader
 	-- or use draw lists
 	-- or something 
@@ -242,7 +181,7 @@ function Map:draw()
 		for _,lineStrip in ipairs(lineStrips) do
 			gl.glBegin(gl.GL_LINE_STRIP)
 			for _,vtx in ipairs(lineStrip) do
-				gl.glVertex3dv(transform(vtx):ptr())
+				gl.glVertex3dv(self.game:transform(vtx):ptr())
 			end
 			gl.glEnd()
 		end
@@ -252,7 +191,7 @@ function Map:draw()
 	gl.glColor4d(1,1,1,.3)
 	for _,pellet in ipairs(self.pellets) do
 		gl.glPushMatrix()
-		local v = transform(pellet)
+		local v = self.game:transform(pellet)
 		gl.glTranslated(v:unpack())
 		gl.glScaled(pelletSize,pelletSize,pelletSize)
 		cube:draw()	
