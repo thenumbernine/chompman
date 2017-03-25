@@ -12,6 +12,7 @@ function Object:init(args)
 	self.game.objs:insert(self)
 
 	self.pos = self.game.map:wrapPos(vec3d(args.pos))
+	self.vel = vec3d()
 	self.destPos = vec3d(self.pos)
 
 	self.moveFrac = 0
@@ -34,6 +35,15 @@ Object.CMD_BACK = 32
 Object.cmd = 0
 Object.dir = 0
 
+local oppositeDir = {
+	[Object.CMD_LEFT] = Object.CMD_RIGHT,
+	[Object.CMD_RIGHT] = Object.CMD_LEFT,
+	[Object.CMD_UP] = Object.CMD_DOWN,
+	[Object.CMD_DOWN] = Object.CMD_UP,
+	[Object.CMD_FWD] = Object.CMD_BACK,
+	[Object.CMD_BACK] = Object.CMD_FWD,
+}
+
 function Object:update()
 	if self.srcPos ~= self.destPos then
 		self.moveFrac = self.moveFrac + self.speed
@@ -48,15 +58,19 @@ function Object:update()
 		end
 	else
 		for _,cmd in ipairs{self.CMD_LEFT, self.CMD_RIGHT, self.CMD_UP, self.CMD_DOWN, self.CMD_FWD, self.CMD_BACK} do
-			local canMove = self:canMove(cmd)
-			if bit.band(self.cmd, cmd) ~= 0 then
-				if canMove then
-					self.dir = cmd
+			if cmd ~= oppositeDir[self.dir] then
+				if bit.band(self.cmd, cmd) ~= 0 then
+					if self:canMove(cmd) then
+						self.dir = cmd
+					end
 				end
 			end
 		end
 		if self:canMove(self.dir) then
 			self:doMove(self.dir)
+		else
+			self.dir = 0	-- TODO moveDir vs displayDir
+			self.vel:set(0,0,0)
 		end
 	end
 end
@@ -80,18 +94,19 @@ end
 
 function Object:doMove(dir)
 	if dir == self.CMD_LEFT then
-		self.destPos = self.pos + vec3d(-1,0,0)
+		self.vel:set(-1,0,0)
 	elseif dir == self.CMD_RIGHT then
-		self.destPos = self.pos + vec3d(1,0,0)
+		self.vel:set(1,0,0)
 	elseif dir == self.CMD_UP then
-		self.destPos = self.pos + vec3d(0,-1,0)
+		self.vel:set(0,-1,0)
 	elseif dir == self.CMD_DOWN then
-		self.destPos = self.pos + vec3d(0,1,0)
+		self.vel:set(0,1,0)
 	elseif dir == self.CMD_FWD then
-		self.destPos = self.pos + vec3d(0,0,-1)
+		self.vel:set(0,0,-1)
 	elseif dir == self.CMD_BACK then
-		self.destPos = self.pos + vec3d(0,0,1)
+		self.vel:set(0,0,1)
 	end
+	self.destPos = self.pos + self.vel
 end
 
 function Object:draw()
@@ -101,6 +116,42 @@ function Object:draw()
 	gl.glScaled(self.size:unpack())
 	cube:draw()
 	gl.glPopMatrix()
+end
+
+function Object:playSound(name, volume, pitch)
+	local game = self.game
+	-- openal supports only one listener
+	-- rather than reposition the listener according to what player is closest ... position the sound!
+	-- and don't bother with listener velocity
+	local closestPlayer, closestDistSq
+	-- TODO only cycle through local connections
+	for _,player in ipairs(game.players) do
+		local delta = player.pos - self.pos
+		local distSq = delta:lenSq()	-- TODO use lattice metric ... for sounds as well as graphics
+		if not closestDistSq or closestDistSq > distSq then
+			closestDistSq = distSq
+			closestPlayer = player
+		end
+	end
+	if closestDistSq > game.maxAudioDist * game.maxAudioDist then return end
+
+	-- clientside ...
+	local source = game:getNextAudioSource()
+	if not source then
+		print('all audio sources used')
+		return
+	end
+
+	local sounds = require 'chompman.app'.app.sounds
+	local sound = sounds:load('sounds/'..name..'.wav')
+	source:setBuffer(sound)
+	source:setGain((volume or 1) * game.volume)
+	source:setPitch(pitch or 1)
+	source:setPosition((self.pos - closestPlayer.pos):unpack())
+	source:setVelocity((self.vel - closestPlayer.vel):unpack())
+	source:play()
+
+	return source
 end
 
 return Object

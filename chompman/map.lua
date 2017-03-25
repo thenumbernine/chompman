@@ -27,8 +27,8 @@ in terms of pacman sizes, excluding walls, it is 10x7 = 70 units
 Map.corridorSize = 1
 Map.wallSize = 3
 Map.colSize = Map.corridorSize + Map.wallSize
-Map.numCols = vec3d(10,7,7)
---Map.numCols = vec3d(5,5,1)
+--Map.numCols = vec3d(10,7,7)
+Map.numCols = vec3d(5,5,3)
 Map.size = vec3d(1,1,1)*Map.numCols*Map.colSize
 
 local function shuffle(src)
@@ -147,11 +147,26 @@ end
 function Map:draw()
 	local app = require 'chompman.app'.app
 	local fwd = -vec3d(app.viewAngle:zAxis():unpack())
+	
+	-- how far from the player points are to be pushed out of the way 
+	local mvPushRadius = 3
+	-- coeff of how smooth they are pushed in 3D space
+	local push3DCoeff = 3
+	-- coeff of how smooth they are pushed in 2D space
+	local push2DCoeff = 3
+	
+	--[[ fixed radius
 	local screenPushRadius = .15
-	local mvPushRadius = 5
+	--]]
+	-- [[ this should be the screen distance of the modelview push radius at the player's distance from the camera
+	local player = self.game.player
+	local viewToPlayer = player.pos - app.viewPos
+	local playerDist = fwd:dot(viewToPlayer)
+	local screenPushRadius = mvPushRadius / playerDist
+	--]]
 
 	local function transform(vtx)
-		local distFromPlayer3DSq = (vtx - self.game.player.pos):lenSq()
+		local distFromPlayer3DSq = (vtx - player.pos):lenSq()
 
 		vtx = vtx - app.viewPos	-- vtx is now relative to the view position 
 		
@@ -159,11 +174,31 @@ function Map:draw()
 		vtx = vtx - fwd * vfwd	-- vtx is now in the view plane
 		vtx = vtx / vfwd
 		local screenDistSq = vtx:lenSq()
-
-		if distFromPlayer3DSq > mvPushRadius * mvPushRadius then
-			local screenDist = math.sqrt(screenDistSq)
-			vtx = vtx * math.max(screenPushRadius, screenDist) / screenDist 
-		end
+	
+		-- pushInfl is whether we want to push the point outward
+		--[[ C0-continuous 
+		local pushExp = (distFromPlayer3DSq < mvPushRadius * mvPushRadius) and 0 or 1
+		--]]
+		-- [[ C-inf
+		local pushExp = .5 + .5 * math.tanh(push3DCoeff * (math.sqrt(distFromPlayer3DSq) - mvPushRadius))
+		--]]
+		
+		local screenDist = math.sqrt(screenDistSq)
+			
+		-- scale back, but with the near-screenPushRadius points pushed back past screenPushRadius
+		-- using a ramp function
+		--[[ C0 option would be:
+		local scale = math.max(screenPushRadius, screenDist) / screenDist
+		--]]
+		-- [[ C-inf option:
+		local scale = (screenPushRadius 
+				+ math.log(1 
+					+ math.exp(push2DCoeff * (screenDist - screenPushRadius))
+				) / push2DCoeff
+			) / screenDist
+		--]]
+		vtx = vtx * math.pow(scale, pushExp)
+		
 		vtx = vtx * vfwd	
 		vtx = vtx + fwd * vfwd
 
@@ -171,102 +206,11 @@ function Map:draw()
 		return vtx
 	end
 
---	self.drawList = self.drawList or {}
---	glCallOrDraw(self.drawList, function()
-		--[[ draw solid
-		gl.glColor4d(1, 1, 1, .01)
-		--gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
-		local e = 0
-		for k=0,self.size.z-1 do
-			for j=0,self.size.y-1 do
-				for i=0,self.size.x-1 do
-					if self.data[e] ~= 0 then
-						gl.glPushMatrix()
-						gl.glTranslated(i,j,k)
---gl.glScaled(.5, .5, .5)
-						cube:draw()
-						gl.glPopMatrix()
-					end
-					e=e+1
-				end
-			end
-		end
-		--gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_POLYGON)
-		--]]
-		--[[ draw non-solid inverse
-		gl.glColor4d(1, 1, 1, .01)
-		gl.glCullFace(gl.GL_FRONT)
-		local e = 0
-		for k=0,self.size.z-1 do
-			for j=0,self.size.y-1 do
-				for i=0,self.size.x-1 do
-					if self.data[e] == 0 then
-						-- TODO only on edges
-						gl.glPushMatrix()
-						gl.glTranslated(i,j,k)
---gl.glScaled(.5, .5, .5)
-						cube:draw(-1)
-						gl.glPopMatrix()
-					end
-					e=e+1
-				end
-			end
-		end
-		gl.glCullFace(gl.GL_BACK)
-		--]]	
-		--[=[ draw wireframe
-		gl.glColor3d(1, 1, 1)
-		gl.glBegin(gl.GL_LINES)
-		for k=1,self.size.z do
-			for j=1,self.size.y do
-				for i=1,self.size.x do
-					for s1=0,2 do
-						local s2 = (s1 + 1) % 3	
-						local s3 = (s2 + 1) % 3	
-						local i0 = vec3d(i,j,k)
-						local i1 = vec3d(i,j,k)
-						i1:ptr()[s1] = i1:ptr()[s1]-1
-						local i2 = vec3d(i,j,k)
-						i2:ptr()[s2] = i2:ptr()[s2]-1
-						local i3 = vec3d(i,j,k)
-						i3:ptr()[s1] = i3:ptr()[s1]-1
-						i3:ptr()[s2] = i3:ptr()[s2]-1
-						local v0 = 0 ~= self:get(i0:unpack())
-						local v1 = 0 ~= self:get(i1:unpack())
-						local v2 = 0 ~= self:get(i2:unpack())
-						local v3 = 0 ~= self:get(i3:unpack())
-					
-						--[[
-						local vand = v0 and v1 and v2 and v3
-						local vor = v0 or v1 or v2 or v3
-						if vor and not vand then
-						--]]
-						-- single edge
-						if (v0 and not v1 and not v2 and not v3)
-						or (not v0 and v1 and not v2 and not v3)
-						or (not v0 and not v1 and v2 and not v3)
-						or (not v0 and not v1 and not v2 and v3)
-						-- opposing edges
-						or (v0 and not v1 and not v2 and v3) 
-						or (not v0 and v1 and v2 and not v3)
-						-- triple edges
-						or (v0 and v1 and v2 and not v3)
-						or (v0 and v1 and not v2 and v3)
-						or (v0 and not v1 and v2 and v3)
-						or (not v0 and v1 and v2 and v3)
-						then
-							local ih = i0-.5
-							gl.glVertex3d(ih:unpack())
-							ih:ptr()[s3] = ih:ptr()[s3]+1
-							gl.glVertex3d(ih:unpack())
-						end
-					end
-				end
-			end
-		end	
-		gl.glEnd()
-		--]=]
-		-- [=[ draw paths
+	-- TODO - use call lists and do this as a vertex shader
+	-- or use draw lists
+	-- or something 
+	if not self.lineStrips then
+		self.lineStrips = range(3):map(function(i) return table() end)	-- per axis 
 		for k=0,self.size.z-1 do
 			for j=0,self.size.y-1 do
 				for i=0,self.size.x-1 do
@@ -277,25 +221,33 @@ function Map:draw()
 						if self.isNotSolid[self:get(i0:unpack())]
 						and self.isNotSolid[self:get(i1:unpack())]
 						then
-							local color = vec4d(0,0,0,.75)
-							color:ptr()[s1] = 1
-							gl.glColor4d(color:unpack())
-							gl.glBegin(gl.GL_LINE_STRIP)
-							local fmax = 10
+							local fmax = 100
+							local lineStrip = table()
 							for f=0,fmax do
 								local v = vec3d(i0:unpack())
 								v:ptr()[s1] = v:ptr()[s1] + f/fmax
-								v = transform(v)
-								gl.glVertex3d(v:unpack())
+								lineStrip:insert(v)
 							end
-							gl.glEnd()	
+							self.lineStrips[s1+1]:insert(lineStrip)
 						end
 					end
 				end
 			end
 		end	
-		--]=]
---	end)
+	end
+	for axis,lineStrips in ipairs(self.lineStrips) do
+		local c = vec4d(0,0,0,.75)
+		c:ptr()[axis-1] = 1
+		gl.glColor4dv(c:ptr())
+		for _,lineStrip in ipairs(lineStrips) do
+			gl.glBegin(gl.GL_LINE_STRIP)
+			for _,vtx in ipairs(lineStrip) do
+				gl.glVertex3dv(transform(vtx):ptr())
+			end
+			gl.glEnd()
+		end
+	end
+
 	local pelletSize = .3
 	gl.glColor4d(1,1,1,.3)
 	for _,pellet in ipairs(self.pellets) do

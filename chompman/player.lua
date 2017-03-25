@@ -11,13 +11,16 @@ end
 function Player:update(...)
 	Player.super.update(self, ...)
 	local map = self.game.map
-	local pi = map.pellets:find(nil, function(pellet)
-		return math.floor(pellet.x) == math.floor(self.pos.x)
-			and math.floor(pellet.y) == math.floor(self.pos.y)
-			and math.floor(pellet.z) == math.floor(self.pos.z)
-	end)
-	if pi then
-		map.pellets:remove(pi)
+	if self.moveFrac == 0 then
+		local pi = map.pellets:find(nil, function(pellet)
+			return math.floor(pellet.x) == math.floor(self.pos.x)
+				and math.floor(pellet.y) == math.floor(self.pos.y)
+				and math.floor(pellet.z) == math.floor(self.pos.z)
+		end)
+		if pi then
+			map.pellets:remove(pi)
+			self:playSound'hit'
+		end
 	end
 end
 

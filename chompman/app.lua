@@ -11,6 +11,8 @@ local vec3d = require 'ffi.vec.vec3d'
 local vec4f = require 'ffi.vec.vec4f'
 local GLProgram = require 'gl.program'
 
+local Audio = require 'audio'
+
 local mouse = Mouse()
 
 local App = class(ImGuiApp)
@@ -24,8 +26,27 @@ function App:initGL(...)
 
 	self.viewPos = vec3d(0, 0, 0)
 	self.viewAngle = 
-		quat():fromAngleAxis(0,0,1,45) *
+		quat():fromAngleAxis(0,0,1,10) *
 		quat():fromAngleAxis(1,0,0,45)
+
+	self.audio = Audio()	-- audio system
+	local SoundCache = require 'chompman.soundcache'
+	self.sounds = SoundCache()
+
+	do -- background music...
+		local bgMusicFileName = 'background.wav' 
+		if io.fileexists(bgMusicFileName ) then 
+			local AudioBuffer = require 'audio.buffer'
+			local AudioSource = require 'audio.source'
+			
+			local bgMusic = AudioBuffer(bgMusicFileName)	-- TODO specify by mod init or something
+			local bgAudioSource = AudioSource()
+			bgAudioSource:setBuffer(bgMusic)
+			bgAudioSource:setLooping(true)
+			bgAudioSource:setGain(.5)
+			bgAudioSource:play()
+		end
+	end
 
 	self.game = Game()
 	self.viewDist = self.game.map.size.x
@@ -33,69 +54,28 @@ function App:initGL(...)
 
 	gl.glEnable(gl.GL_CULL_FACE)
 	gl.glEnable(gl.GL_DEPTH_TEST)
---[=[
 
-	self.mainShader = GLProgram{
-		vertexCode = [[
-uniform vec3 playerPos;
-uniform float aspectRatio;
-varying vec4 color;
-
-float cosh(float x) {
-	return .5 * (exp(x) + exp(-x));
-}
-
-float sinh(float x) {
-	return .5 * (exp(x) - exp(-x));
-}
-
-float tanh(float x) {
-	return sinh(x) / cosh(x);
-}
-
-void main() {
-	
-	vec4 plrScrPos = gl_ProjectionMatrix * vec4(playerPos, 1.);
-	vec3 plrDncPos = plrScrPos.xyz / plrScrPos.w;
-
-	vec3 pos = gl_Vertex.xyz;
-	vec4 mvPos = gl_ModelViewMatrix * vec4(pos, 1.);
-	vec4 scrPos = gl_ProjectionMatrix * mvPos;
-	vec3 dncPos = scrPos.xyz / scrPos.w;
-	
-	vec3 deltaMvPos = playerPos.xyz - mvPos.xyz;
-	float mvLen = length(deltaMvPos);
-
-	dncPos.xyz -= plrDncPos.xyz;
-	dncPos.x *= aspectRatio;
-	float scrLen = length(dncPos.xy);
-	//if (scrPos.z < plrScrPos.z - 1.) {
-	if (mvLen > 4.) {
-		//dncPos.xy *= log(1. + exp(scrLen));
-		//dncPos.xy *= 1. + 10. * exp(-10. * scrLen);
-		//dncPos.xy *= cosh(scrLen) / scrLen;
-		dncPos.xy *= max(scrLen, .5) / scrLen;
-	}
-	dncPos.x /= aspectRatio;
-	dncPos.xyz += plrDncPos.xyz;
-
-	color = gl_Color;
-
-	gl_Position = vec4(dncPos, 1.);
-}
-]],
-		fragmentCode = [[
-varying vec4 color;
-void main() {
-	gl_FragColor = color;
-}
-]],
-	}
-
-	self.mainShader:use()
-
---]=]
 end
+
+local Object = require 'chompman.object'
+local dirForKey = {
+	-- keys + pgup/pgdn
+	[sdl.SDLK_DOWN] = Object.CMD_UP,
+	[sdl.SDLK_UP] = Object.CMD_DOWN,
+	[sdl.SDLK_LEFT] = Object.CMD_LEFT,
+	[sdl.SDLK_RIGHT] = Object.CMD_RIGHT,
+	[sdl.SDLK_END] = Object.CMD_FWD,
+	[sdl.SDLK_HOME] = Object.CMD_BACK,
+	-- numpad
+	[sdl.SDLK_KP_2] = Object.CMD_UP,
+	[sdl.SDLK_KP_8] = Object.CMD_DOWN,
+	[sdl.SDLK_KP_4] = Object.CMD_LEFT,
+	[sdl.SDLK_KP_6] = Object.CMD_RIGHT,
+	[sdl.SDLK_KP_1] = Object.CMD_FWD,
+	[sdl.SDLK_KP_7] = Object.CMD_BACK,
+
+
+}
 
 function App:event(event, ...)
 	App.super.event(self, event, ...)
@@ -114,35 +94,17 @@ function App:event(event, ...)
 		elseif event.key.keysym.sym == sdl.SDLK_RSHIFT then
 			rightShiftDown = event.type == sdl.SDL_KEYDOWN
 		end
-		
+			
 		local player = self.game.player
-		if event.type == sdl.SDL_KEYDOWN then
-			if event.key.keysym.sym == sdl.SDLK_UP then
-				player.cmd = bit.bor(player.cmd, self.game.player.CMD_UP)
-			elseif event.key.keysym.sym == sdl.SDLK_DOWN then
-				player.cmd = bit.bor(player.cmd, self.game.player.CMD_DOWN)
-			elseif event.key.keysym.sym == sdl.SDLK_LEFT then
-				player.cmd = bit.bor(player.cmd, self.game.player.CMD_LEFT)
-			elseif event.key.keysym.sym == sdl.SDLK_RIGHT then
-				player.cmd = bit.bor(player.cmd, self.game.player.CMD_RIGHT)
-			elseif event.key.keysym.sym == sdl.SDLK_PAGEUP then
-				player.cmd = bit.bor(player.cmd, self.game.player.CMD_FWD)
-			elseif event.key.keysym.sym == sdl.SDLK_PAGEDOWN then
-				player.cmd = bit.bor(player.cmd, self.game.player.CMD_BACK)
-			end
-		elseif event.type == sdl.SDL_KEYUP then
-			if event.key.keysym.sym == sdl.SDLK_UP then
-				player.cmd = bit.band(player.cmd, bit.bnot(self.game.player.CMD_UP))
-			elseif event.key.keysym.sym == sdl.SDLK_DOWN then
-				player.cmd = bit.band(player.cmd, bit.bnot(self.game.player.CMD_DOWN))
-			elseif event.key.keysym.sym == sdl.SDLK_LEFT then
-				player.cmd = bit.band(player.cmd, bit.bnot(self.game.player.CMD_LEFT))
-			elseif event.key.keysym.sym == sdl.SDLK_RIGHT then
-				player.cmd = bit.band(player.cmd, bit.bnot(self.game.player.CMD_RIGHT))
-			elseif event.key.keysym.sym == sdl.SDLK_PAGEUP then
-				player.cmd = bit.band(player.cmd, bit.bnot(self.game.player.CMD_FWD))
-			elseif event.key.keysym.sym == sdl.SDLK_PAGEDOWN then
-				player.cmd = bit.band(player.cmd, bit.bnot(self.game.player.CMD_BACK))
+		if player then
+			for key,dir in pairs(dirForKey) do
+				if event.key.keysym.sym == key then
+					if event.type == sdl.SDL_KEYDOWN then
+						player.cmd = bit.bor(player.cmd, dir) 
+					elseif event.type == sdl.SDL_KEYUP then
+						player.cmd = bit.band(player.cmd, bit.bnot(dir))
+					end
+				end
 			end
 		end
 	end
@@ -187,32 +149,15 @@ function App:update()
 	gl.glMatrixMode(gl.GL_MODELVIEW)
 	gl.glLoadIdentity()
 
-	--[[
-	gl.glEnable(gl.GL_LIGHTING)
-	gl.glEnable(gl.GL_LIGHT0)
-	gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, vec4f(0,0,-1,0):ptr())
-	--]]
-
 	local aa = self.viewAngle:toAngleAxis()
 	gl.glRotated(-aa[4], aa[1], aa[2], aa[3])
 
 	gl.glTranslated((-self.viewPos):unpack())
 
-	if self.mainShader then
-		if self.mainShader.uniforms.playerPos then
-			gl.glUniform3f(self.mainShader.uniforms.playerPos.loc, self.game.player.pos:unpack())
-		end
-		if self.mainShader.uniforms.aspectRatio then
-			gl.glUniform1f(self.mainShader.uniforms.aspectRatio.loc, self.width / self.height)
-		end
-	end
-
-	-- [[
 	gl.glDisable(gl.GL_DEPTH_TEST)
 	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE)
 	gl.glEnable(gl.GL_BLEND)
 	gl.glColor4d(1,1,1,.05)
-	--]]
 
 	if not self.sysLastTime then self.sysLastTime = os.clock() end
 	self.sysThisTime = os.clock()	
@@ -234,12 +179,11 @@ end
 function App:updateGUI()
 	local player = self.game.player
 	local map = self.game.map
-	ig.igText('map.center: '..map.center)
-	ig.igText('player pos: '..player.pos)
-	ig.igText('player cmd: '..player.cmd)
-	ig.igText('player dir: '..player.dir)
-	ig.igText('player:canMove(dir): '..player:canMove(player.dir))
-	ig.igText('map:get(player.pos): '..map:get(player.pos:unpack()))
+end
+
+function App:exit(...)
+	App.super.exit(self, ...)
+	self.audio:shutdown()
 end
 
 return App
