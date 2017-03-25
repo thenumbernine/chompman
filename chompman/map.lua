@@ -56,8 +56,6 @@ function Map:init(args)
 	for i=0,2 do self.center:ptr()[i] = math.floor(self.center:ptr()[i]) end
 	self.center = self.center * self.colSize + self.wallSize
 
-	self.pellets = table()
-
 	local overlays = table()
 	for overlay=1,2 do
 		self.data = ffi.new('char[?]', self.size:volume())
@@ -118,6 +116,7 @@ function Map:init(args)
 	end
 
 	do
+		self.pellets = table()
 		local e = 0
 		for k=0,self.size.z-1 do
 			for j=0,self.size.y-1 do
@@ -140,6 +139,11 @@ function Map:init(args)
 					e = e + 1
 				end
 			end
+		end
+	
+		self.pills = table()
+		for i=1,5 do
+			self.pills:insert(self.pellets:remove(math.random(1,#self.pills)))
 		end
 	end
 end
@@ -187,15 +191,19 @@ function Map:draw()
 		end
 	end
 
-	local pelletSize = .3
-	gl.glColor4d(1,1,1,.3)
-	for _,pellet in ipairs(self.pellets) do
-		gl.glPushMatrix()
-		local v = self.game:transform(pellet)
-		gl.glTranslated(v:unpack())
-		gl.glScaled(pelletSize,pelletSize,pelletSize)
-		cube:draw()	
-		gl.glPopMatrix()
+	for _,info in ipairs{
+		{size=.3, list=self.pellets},
+		{size=.7, list=self.pills},
+	} do
+		gl.glColor4d(1,1,1,.3)
+		for _,pos in ipairs(info.list) do
+			gl.glPushMatrix()
+			local v = self.game:transform(pos)
+			gl.glTranslated(v:unpack())
+			gl.glScaled(info.size, info.size, info.size)
+			cube:draw()	
+			gl.glPopMatrix()
+		end
 	end
 end
 

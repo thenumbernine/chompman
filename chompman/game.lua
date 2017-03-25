@@ -14,6 +14,9 @@ Game.volume = 1
 
 Game.numGhosts = 4
 
+Game.pillTime = -1
+Game.pillDuration = 15 
+
 function Game:init(args)
 	self.time = 0
 
@@ -57,6 +60,8 @@ function Game:init(args)
 			color = colors[(i-1)%#colors+1],
 		}
 	end)
+
+	--self.player:playSound'pacman_beginning'
 end
 
 -- how far from the player points are to be pushed out of the way 
@@ -86,6 +91,7 @@ function Game:draw()
 end
 
 function Game:transform(vtx)
+	
 	local distFromPlayer3DSq = (vtx - self.player.pos):lenSq()
 
 	vtx = vtx - self.app.viewPos	-- vtx is now relative to the view position 

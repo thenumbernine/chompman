@@ -69,7 +69,7 @@ function Object:update()
 		end
 	else
 		for _,cmd in ipairs(self.dirs) do
-			if cmd ~= oppositeDir[self.dir] then
+			do --if cmd ~= oppositeDir[self.dir] then
 				if bit.band(self.cmd, cmd) ~= 0 then
 					if self:canMove(cmd) then
 						self.dir = cmd
@@ -120,8 +120,12 @@ function Object:doMove(dir)
 	self.destPos = self.pos + self.vel
 end
 
+function Object:getColor() 
+	return self.color 
+end
+
 function Object:draw()
-	gl.glColor3d(self.color:unpack())
+	gl.glColor3d(self:getColor():unpack())
 	gl.glPushMatrix()
 	gl.glTranslated(self.game:transform(self.pos):unpack())
 	gl.glScaled(self.size:unpack())
@@ -136,7 +140,7 @@ function Object:playSound(name, volume, pitch)
 	-- and don't bother with listener velocity
 	local closestPlayer, closestDistSq
 	-- TODO only cycle through local connections
-	for _,player in ipairs(game.players) do
+	for _,player in ipairs(self.game.players) do
 		local delta = player.pos - self.pos
 		local distSq = delta:lenSq()	-- TODO use lattice metric ... for sounds as well as graphics
 		if not closestDistSq or closestDistSq > distSq then
