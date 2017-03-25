@@ -10,6 +10,14 @@ function Ghost:update(...)
 	if self.moveFrac == 0 then
 		self.cmd = self.dirs[math.random(1,#self.dirs)]
 	end
+
+	for _,player in ipairs(self.game.players) do
+		local delta = player.pos - self.pos
+		local distSq = delta:lenSq()
+		if distSq <= (math.max(self.size:unpack()) + math.max(player.size:unpack()))^2 then
+			player:die()
+		end
+	end
 end
 
 return Ghost

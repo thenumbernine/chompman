@@ -15,6 +15,8 @@ Game.volume = 1
 Game.numGhosts = 4
 
 function Game:init(args)
+	self.time = 0
+
 	self.app = args.app
 
 	-- maybe this should go in App:init ... 
@@ -125,9 +127,11 @@ function Game:transform(vtx)
 	return vtx
 end
 
-function Game:update()
+function Game:update(dt)
+	self.dt = dt
+	self.time = self.time + dt
 	for _,obj in ipairs(self.objs) do
-		obj:update()
+		obj:update(dt)
 	end
 end
 

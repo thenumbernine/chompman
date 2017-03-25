@@ -1,4 +1,5 @@
 local class = require 'ext.class'
+local vec3d = require 'ffi.vec.vec3d'
 local Object = require 'chompman.object'
 
 local Player = class(Object)
@@ -9,9 +10,13 @@ function Player:init(...)
 end
 
 function Player:update(...)
+	if self.deadTime then 
+		self.size = vec3d(1,1,1) * math.max(0, 1 - (self.game.time - self.deadTime))
+		return 
+	end
 	Player.super.update(self, ...)
-	local map = self.game.map
 	if self.moveFrac == 0 then
+		local map = self.game.map
 		local pi = map.pellets:find(nil, function(pellet)
 			return math.floor(pellet.x) == math.floor(self.pos.x)
 				and math.floor(pellet.y) == math.floor(self.pos.y)
@@ -19,9 +24,14 @@ function Player:update(...)
 		end)
 		if pi then
 			map.pellets:remove(pi)
-			self:playSound'hit'
+			self:playSound'pellet'
 		end
 	end
+end
+
+function Player:die()
+	self.deadTime = self.game.time 
+	self:playSound'die'
 end
 
 return Player
