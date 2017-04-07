@@ -21,6 +21,8 @@ function Game:init(args)
 	self.time = 0
 
 	self.app = args.app
+	
+	self.map = Map{game=self}
 
 	-- maybe this should go in App:init ... 
 	local audio = self.app.audio
@@ -30,14 +32,12 @@ function Game:init(args)
 	self.audioSources = range(32):map(function()
 		local src = AudioSource()
 		src:setReferenceDistance(math.max(
-			Map.size:unpack()
+			self.map.size:unpack()
 		))
 		src:setMaxDistance(self.maxAudioDist)
 		src:setRolloffFactor(1)
 		return src
 	end)
-	
-	self.map = Map{game=self}
 
 	self.objs = table()
 	self.player = Player{
@@ -70,6 +70,8 @@ Game.mvPushRadius = 3
 Game.push3DCoeff = 3
 -- coeff of how smooth they are pushed in 2D space
 Game.push2DCoeff = 3
+-- coeff of pushing something based on how close to the view they are
+Game.pushFwdCoeff = 1
 
 function Game:draw()
 	-- used for Game:transform	
@@ -93,6 +95,7 @@ end
 function Game:transform(vtx)
 	
 	local distFromPlayer3DSq = (vtx - self.player.pos):lenSq()
+	local playerPosFwd = self.viewFwd:dot(self.player.pos - self.app.viewPos)
 
 	vtx = vtx - self.app.viewPos	-- vtx is now relative to the view position 
 	
@@ -107,6 +110,7 @@ function Game:transform(vtx)
 	--]]
 	-- [[ C-inf
 	local pushExp = .5 + .5 * math.tanh(self.push3DCoeff * (math.sqrt(distFromPlayer3DSq) - self.mvPushRadius))
+	pushExp = pushExp * (.5 + .5 * math.tanh(self.pushFwdCoeff * (vtxFwd - playerPosFwd)))
 	--]]
 	
 	local screenDist = math.sqrt(screenDistSq)
