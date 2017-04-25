@@ -4,7 +4,7 @@ local vec3d = require 'ffi.vec.vec3d'
 local vec4d = require 'ffi.vec.vec4d'
 local ffi = require 'ffi'
 local cube = require 'chompman.cube'
-local gl = require 'ffi.OpenGL'
+local gl = require 'gl'
 local glCallOrDraw = require 'gl.call'
 
 local Map = class()

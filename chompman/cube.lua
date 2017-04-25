@@ -1,5 +1,5 @@
 local vec3d = require 'ffi.vec.vec3d'
-local gl = require 'ffi.OpenGL'
+local gl = require 'gl'
 
 local cube = {
 	vtxIndexes = {

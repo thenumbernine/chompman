@@ -1,6 +1,6 @@
 local class = require 'ext.class'
 local vec3d = require 'ffi.vec.vec3d'
-local gl = require 'ffi.OpenGL'
+local gl = require 'gl'
 local cube = require 'chompman.cube'
 
 local Object = class()
