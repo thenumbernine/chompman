@@ -1,5 +1,5 @@
 local class = require 'ext.class'
-local vec3d = require 'ffi.vec.vec3d'
+local vec3d = require 'vec-ffi.vec3d'
 local gl = require 'gl'
 local cube = require 'chompman.cube'
 

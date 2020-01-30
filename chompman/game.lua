@@ -1,7 +1,7 @@
 local class = require 'ext.class'
 local table = require 'ext.table'
 local range = require 'ext.range'
-local vec3d = require 'ffi.vec.vec3d'
+local vec3d = require 'vec-ffi.vec3d'
 local Map = require 'chompman.map'
 local Player = require 'chompman.player'
 local Ghost = require 'chompman.ghost'
