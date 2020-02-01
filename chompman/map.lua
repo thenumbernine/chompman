@@ -53,7 +53,7 @@ function Map:init(args)
 	self.game = args.game
 	
 	self.center = (self.size-1)/self.colSize/2
-	for i=0,2 do self.center:ptr()[i] = math.floor(self.center:ptr()[i]) end
+	for i=0,2 do self.center.s[i] = math.floor(self.center.s[i]) end
 	self.center = self.center * self.colSize + self.wallSize
 
 	local overlays = table()
@@ -85,10 +85,10 @@ function Map:init(args)
 				local s2 = (s1 + 1) % 3
 				local s3 = (s2 + 1) % 3
 				local offset = vec3d(0,0,0)
-				offset:ptr()[side.dim] = side.dir
+				offset.s[side.dim] = side.dir
 				local npt = pt + offset
 				for i=0,2 do
-					npt:ptr()[i] = npt:ptr()[i] % (self.size/self.colSize):ptr()[i]
+					npt.s[i] = npt.s[i] % (self.size/self.colSize).s[i]
 				end
 				local npts = tostring(npt)
 				if not touched[npts] then
@@ -99,12 +99,12 @@ function Map:init(args)
 						for j=self.wallSize,self.colSize-1 do
 							for k=0,self.wallSize-1 do
 								local bpt = pt * self.colSize
-								bpt:ptr()[s1] = bpt:ptr()[s1] + k
+								bpt.s[s1] = bpt.s[s1] + k
 								if side.dir > 0 then
-									bpt:ptr()[s1] = bpt:ptr()[s1] + self.colSize
+									bpt.s[s1] = bpt.s[s1] + self.colSize
 								end
-								bpt:ptr()[s2] = bpt:ptr()[s2] + i
-								bpt:ptr()[s3] = bpt:ptr()[s3] + j
+								bpt.s[s2] = bpt.s[s2] + i
+								bpt.s[s3] = bpt.s[s3] + j
 								self:set(bpt.x, bpt.y, bpt.z, self.TYPE_EMPTY)
 							end
 						end
@@ -160,7 +160,7 @@ function Map:draw()
 					local i0 = vec3d(i,j,k)
 					for s1=0,2 do
 						local i1 = vec3d(i0:unpack())
-						i1:ptr()[s1] = i1:ptr()[s1] + 1
+						i1.s[s1] = i1.s[s1] + 1
 						if self.isNotSolid[self:get(i0:unpack())]
 						and self.isNotSolid[self:get(i1:unpack())]
 						then
@@ -168,7 +168,7 @@ function Map:draw()
 							local lineStrip = table()
 							for f=0,fmax do
 								local v = vec3d(i0:unpack())
-								v:ptr()[s1] = v:ptr()[s1] + f/fmax
+								v.s[s1] = v.s[s1] + f/fmax
 								lineStrip:insert(v)
 							end
 							self.lineStrips[s1+1]:insert(lineStrip)
@@ -180,12 +180,12 @@ function Map:draw()
 	end
 	for axis,lineStrips in ipairs(self.lineStrips) do
 		local c = vec4d(0,0,0,.75)
-		c:ptr()[axis-1] = 1
-		gl.glColor4dv(c:ptr())
+		c.s[axis-1] = 1
+		gl.glColor4dv(c.s)
 		for _,lineStrip in ipairs(lineStrips) do
 			gl.glBegin(gl.GL_LINE_STRIP)
 			for _,vtx in ipairs(lineStrip) do
-				gl.glVertex3dv(self.game:transform(vtx):ptr())
+				gl.glVertex3dv(self.game:transform(vtx).s)
 			end
 			gl.glEnd()
 		end
@@ -227,7 +227,7 @@ end
 function Map:wrapPos(v)
 	v = vec3d(v)
 	for i=0,2 do
-		v:ptr()[i] = v:ptr()[i] % tonumber(self.size:ptr()[i])
+		v.s[i] = v.s[i] % tonumber(self.size.s[i])
 	end
 	return v
 end
