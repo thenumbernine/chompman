@@ -1,12 +1,12 @@
 require 'ext'
 local class = require 'ext.class'
 local ImGuiApp = require 'imguiapp'
+local Mouse = require 'glapp.mouse'
 local Game = require 'chompman.game'
 local gl = require 'gl'
 local ig = require 'ffi.imgui'
 local sdl = require 'ffi.sdl'
 local quat = require 'vec.quat'
-local Mouse = require 'gui.mouse'
 local vec3d = require 'vec-ffi.vec3d'
 local vec4f = require 'vec-ffi.vec4f'
 local GLProgram = require 'gl.program'
@@ -121,7 +121,7 @@ function App:update()
 				local magn = mouse.deltaPos:length() * 1000
 				if magn > 0 then
 					local normDelta = mouse.deltaPos / magn
-					local r = quat():fromAngleAxis(-normDelta[2], normDelta[1], 0, -magn)
+					local r = quat():fromAngleAxis(-normDelta.y, normDelta.x, 0, -magn)
 					self.viewAngle = (self.viewAngle * r):normalize()
 				end
 			end
@@ -160,6 +160,10 @@ function App:update()
 	if not self.sysLastTime then self.sysLastTime = os.clock() end
 	self.sysThisTime = os.clock()	
 	self.sysDeltaTime = self.sysThisTime - self.sysLastTime
+local fps = 1/self.sysDeltaTime
+if fps < 10 then
+	print'FIXME ever since switching from :ptr() ffi.cast to union .s[] this now runs horribly slow!'
+end
 	if not self.frameTimeLeft then self.frameTimeLeft = 0 end
 	self.frameTimeLeft = self.frameTimeLeft + self.sysDeltaTime
 	self.dt = 1/50

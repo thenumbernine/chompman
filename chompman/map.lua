@@ -178,6 +178,8 @@ function Map:draw()
 			end
 		end	
 	end
+	
+--[[ this now runs slow.  time to use a real buffer?
 	for axis,lineStrips in ipairs(self.lineStrips) do
 		local c = vec4d(0,0,0,.75)
 		c.s[axis-1] = 1
@@ -190,6 +192,7 @@ function Map:draw()
 			gl.glEnd()
 		end
 	end
+--]]
 
 	for _,info in ipairs{
 		{size=.3, list=self.pellets},
