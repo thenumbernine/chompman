@@ -33,7 +33,7 @@ function App:initGL(...)
 
 	do -- background music...
 		local bgMusicFileName = 'background.wav' 
-		if io.fileexists(bgMusicFileName ) then 
+		if os.fileexists(bgMusicFileName ) then 
 			local AudioBuffer = require 'audio.buffer'
 			local AudioSource = require 'audio.source'
 			
