@@ -164,7 +164,7 @@ function Map:draw()
 						if self.isNotSolid[self:get(i0:unpack())]
 						and self.isNotSolid[self:get(i1:unpack())]
 						then
-							local fmax = 100
+							local fmax = 3
 							local lineStrip = table()
 							for f=0,fmax do
 								local v = vec3d(i0:unpack())
@@ -179,7 +179,7 @@ function Map:draw()
 		end	
 	end
 	
---[[ this now runs slow.  time to use a real buffer?
+-- [[ this now runs slow.  time to use a real buffer?
 	for axis,lineStrips in ipairs(self.lineStrips) do
 		local c = vec4d(0,0,0,.75)
 		c.s[axis-1] = 1
