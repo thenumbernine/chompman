@@ -4,7 +4,7 @@ local ImGuiApp = require 'imguiapp'
 local Mouse = require 'glapp.mouse'
 local Game = require 'chompman.game'
 local gl = require 'gl'
-local ig = require 'ffi.imgui'
+local ig = require 'imgui'
 local sdl = require 'ffi.sdl'
 local quat = require 'vec.quat'
 local vec3d = require 'vec-ffi.vec3d'
@@ -160,10 +160,7 @@ function App:update()
 	if not self.sysLastTime then self.sysLastTime = os.clock() end
 	self.sysThisTime = os.clock()	
 	self.sysDeltaTime = self.sysThisTime - self.sysLastTime
-local fps = 1/self.sysDeltaTime
-if fps < 10 then
-	print'FIXME ever since switching from :ptr() ffi.cast to union .s[] this now runs horribly slow!'
-end
+	local fps = 1/self.sysDeltaTime
 	if not self.frameTimeLeft then self.frameTimeLeft = 0 end
 	self.frameTimeLeft = self.frameTimeLeft + self.sysDeltaTime
 	self.dt = 1/50
