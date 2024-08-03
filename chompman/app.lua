@@ -19,8 +19,8 @@ local App = class(ImGuiApp)
 
 App.title = 'ChompMan'
 
-function App:initGL(...)
-	App.super.initGL(self, ...)
+function App:initGL()
+	App.super.initGL(self)
 
 	self.viewPos = vec3d(0, 0, 0)
 	self.viewAngle = 
@@ -75,31 +75,31 @@ local dirForKey = {
 
 }
 
-function App:event(event, ...)
-	App.super.event(self, event, ...)
+function App:event(event)
+	App.super.event(self, event)
 	if ig.igGetIO()[0].WantCaptureKeyboard then return end
-	if event.type == sdl.SDL_MOUSEBUTTONDOWN then
+	if event[0].type == sdl.SDL_MOUSEBUTTONDOWN then
 		--[[
-		if event.button.button == sdl.SDL_BUTTON_WHEELUP then
+		if event[0].button.button == sdl.SDL_BUTTON_WHEELUP then
 			viewDist = viewDist * zoomFactor
-		elseif event.button.button == sdl.SDL_BUTTON_WHEELDOWN then
+		elseif event[0].button.button == sdl.SDL_BUTTON_WHEELDOWN then
 			viewDist = viewDist / zoomFactor
 		end
 		--]]
-	elseif event.type == sdl.SDL_KEYDOWN or event.type == sdl.SDL_KEYUP then
-		if event.key.keysym.sym == sdl.SDLK_LSHIFT then
-			leftShiftDown = event.type == sdl.SDL_KEYDOWN
-		elseif event.key.keysym.sym == sdl.SDLK_RSHIFT then
-			rightShiftDown = event.type == sdl.SDL_KEYDOWN
+	elseif event[0].type == sdl.SDL_KEYDOWN or event[0].type == sdl.SDL_KEYUP then
+		if event[0].key.keysym.sym == sdl.SDLK_LSHIFT then
+			leftShiftDown = event[0].type == sdl.SDL_KEYDOWN
+		elseif event[0].key.keysym.sym == sdl.SDLK_RSHIFT then
+			rightShiftDown = event[0].type == sdl.SDL_KEYDOWN
 		end
 			
 		local player = self.game.player
 		if player then
 			for key,dir in pairs(dirForKey) do
-				if event.key.keysym.sym == key then
-					if event.type == sdl.SDL_KEYDOWN then
+				if event[0].key.keysym.sym == key then
+					if event[0].type == sdl.SDL_KEYDOWN then
 						player.cmd = bit.bor(player.cmd, dir) 
-					elseif event.type == sdl.SDL_KEYUP then
+					elseif event[0].type == sdl.SDL_KEYUP then
 						player.cmd = bit.band(player.cmd, bit.bnot(dir))
 					end
 				end
