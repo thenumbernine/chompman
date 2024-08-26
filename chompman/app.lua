@@ -15,8 +15,8 @@ local Audio = require 'audio'
 
 local mouse = Mouse()
 
-local App = class(ImGuiApp)
-
+local App = ImGuiApp:subclass()
+App.viewUseGLMatrixMode = true
 App.title = 'ChompMan'
 
 function App:initGL()
