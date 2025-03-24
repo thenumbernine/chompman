@@ -4,8 +4,6 @@ local vec3d = require 'vec-ffi.vec3d'
 local vec4d = require 'vec-ffi.vec4d'
 local ffi = require 'ffi'
 local cube = require 'chompman.cube'
-local gl = require 'gl'
-local glCallOrDraw = require 'gl.call'
 
 local Map = class()
 
@@ -183,13 +181,13 @@ function Map:draw()
 	for axis,lineStrips in ipairs(self.lineStrips) do
 		local c = vec4d(0,0,0,.75)
 		c.s[axis-1] = 1
-		gl.glColor4dv(c.s)
+		solidLines.uniforms.color = {c:unpack()}
 		for _,lineStrip in ipairs(lineStrips) do
-			gl.glBegin(gl.GL_LINE_STRIP)
+			local vtxs = solidLines:beginUpdate()
 			for _,vtx in ipairs(lineStrip) do
-				gl.glVertex3dv(self.game:transform(vtx).s)
+				vtxs:emplace_back():set(self.game:transform(vtx):unpack())
 			end
-			gl.glEnd()
+			solidLines:endUpdate()
 		end
 	end
 --]]
@@ -198,14 +196,14 @@ function Map:draw()
 		{size=.3, list=self.pellets},
 		{size=.7, list=self.pills},
 	} do
-		gl.glColor4d(1,1,1,.3)
+		solidTris.uniforms.color = {1,1,1,.3}
 		for _,pos in ipairs(info.list) do
-			gl.glPushMatrix()
+			local pushmat = mvProjMat:clone()
 			local v = self.game:transform(pos)
-			gl.glTranslated(v:unpack())
-			gl.glScaled(info.size, info.size, info.size)
+			mvProjMat:applyTranslate(v:unpack())
+			mvProjMat:applyScale(info.size, info.size, info.size)
 			cube:draw()	
-			gl.glPopMatrix()
+			mvProjMat:copy(pushmat)
 		end
 	end
 end

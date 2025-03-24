@@ -41,13 +41,13 @@ Ghost.eyeSize = .25
 
 function Ghost:draw(...)
 	if self.eyesOnly then
-		gl.glColor3d(1,1,1)
+		solidTris.uniforms.color = {1,1,1,1}
 		for _,ofs in ipairs{vec3d(-.25,0,.25),vec3d(.25,0,.25)} do
-			gl.glPushMatrix()
-			gl.glTranslated(self.game:transform(self.pos + ofs):unpack())
-			gl.glScaled(self.eyeSize,self.eyeSize,self.eyeSize)
+			local push = mvProjMat:clone()
+			mvProjMat:applyTranslate(self.game:transform(self.pos + ofs):unpack())
+			mvProjMat:applyScale(self.eyeSize,self.eyeSize,self.eyeSize)
 			cube:draw()
-			gl.glPopMatrix()
+			mvProjMat:set(push)
 		end	
 	else
 		Ghost.super.draw(self, ...)

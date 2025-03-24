@@ -1,5 +1,4 @@
 local vec3d = require 'vec-ffi.vec3d'
-local gl = require 'gl'
 
 local cube = {
 	vtxIndexes = {
@@ -39,15 +38,19 @@ local cube = {
 }
 
 function cube:draw(normalScale)
-	normalScale = normalScale or 1
-	gl.glBegin(gl.GL_QUADS)
-	for i=1,#self.vtxIndexes do
-		local n = self.normals[self.normalIndexes[i]]
-		gl.glNormal3d((n * normalScale):unpack())
-		local v = self.vtxs[self.vtxIndexes[i]]
-		gl.glVertex3d(v:unpack())
+	--normalScale = normalScale or 1
+	local vtxs = solidTris:beginUpdate()
+	for i=1,#self.vtxIndexes,4 do
+		-- TODO also normals?
+		vtxs:emplace_back():set(self.vtxs[self.vtxIndexes[i+0]]:unpack())
+		vtxs:emplace_back():set(self.vtxs[self.vtxIndexes[i+1]]:unpack())
+		vtxs:emplace_back():set(self.vtxs[self.vtxIndexes[i+2]]:unpack())
+
+		vtxs:emplace_back():set(self.vtxs[self.vtxIndexes[i+2]]:unpack())
+		vtxs:emplace_back():set(self.vtxs[self.vtxIndexes[i+3]]:unpack())
+		vtxs:emplace_back():set(self.vtxs[self.vtxIndexes[i+0]]:unpack())
 	end
-	gl.glEnd()
+	solidTris:endUpdate()
 end
 
 return cube

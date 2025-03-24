@@ -9,6 +9,7 @@ local sdl = require 'ffi.req' 'sdl'
 local quat = require 'vec.quat'
 local vec3d = require 'vec-ffi.vec3d'
 local vec4f = require 'vec-ffi.vec4f'
+local GLSceneObject = require 'gl.sceneobject'
 local GLProgram = require 'gl.program'
 
 local Audio = require 'audio'
@@ -53,6 +54,58 @@ function App:initGL()
 	gl.glEnable(gl.GL_CULL_FACE)
 	gl.glEnable(gl.GL_DEPTH_TEST)
 
+	local solidProgram = GLProgram{
+		version = 'latest',
+		precision = 'best',
+		vertexCode = [[
+in vec3 vertex;
+uniform mat4 mvProjMat;
+void main() {
+	gl_Position = mvProjMat * vec4(vertex, 1.);
+}
+]],
+		fragmentCode = [[
+out vec4 fragColor;
+uniform vec4 color;
+void main() {
+	fragColor = color;
+}
+]],
+	}:useNone()
+
+	solidTris = GLSceneObject{
+		program = solidProgram,
+		geometry = {
+			mode = gl.GL_TRIANGLES,
+		},
+		vertexes = {
+			type = gl.GL_FLOAT,
+			dim = 3,
+			useVec = true,
+		},
+		uniforms = {
+			color = {1,1,1,1},
+		},
+	}
+
+	solidLines = GLSceneObject{
+		program = solidProgram,
+		geometry = {
+			mode = gl.GL_LINE_STRIP,
+		},
+		vertexes = {
+			type = gl.GL_FLOAT,
+			dim = 3,
+			useVec = true,
+		},
+		uniforms = {
+			color = {1,1,1,1},
+		},
+	}
+
+	mvProjMat = require 'matrix.ffi'({4,4}, 'float'):zeros()
+	solidTris.uniforms.mvProjMat = mvProjMat.ptr
+	solidLines.uniforms.mvProjMat = mvProjMat.ptr
 end
 
 local Object = require 'chompman.object'
@@ -136,21 +189,15 @@ function App:update()
 
 	gl.glClear(bit.bor(gl.GL_COLOR_BUFFER_BIT, gl.GL_DEPTH_BUFFER_BIT))
 
-	gl.glMatrixMode(gl.GL_PROJECTION)
-	gl.glLoadIdentity()
 	local ar = self.width / self.height
 	local znear = 1
 	local zfar = 1000
 	local tanFov = .5
-	gl.glFrustum(-ar * znear * tanFov, ar * znear * tanFov, -znear * tanFov, znear * tanFov, znear, zfar)
-
-	gl.glMatrixMode(gl.GL_MODELVIEW)
-	gl.glLoadIdentity()
+	mvProjMat:setFrustum(-ar * znear * tanFov, ar * znear * tanFov, -znear * tanFov, znear * tanFov, znear, zfar)
 
 	local aa = self.viewAngle:toAngleAxis()
-	gl.glRotated(-aa[4], aa[1], aa[2], aa[3])
-
-	gl.glTranslated((-self.viewPos):unpack())
+	mvProjMat:applyRotate(-aa[4], aa[1], aa[2], aa[3])
+	mvProjMat:applyTranslate((-self.viewPos):unpack())
 
 	gl.glDisable(gl.GL_DEPTH_TEST)
 	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)

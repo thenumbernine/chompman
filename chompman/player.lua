@@ -6,7 +6,7 @@ local Player = class(Object)
 
 function Player:init(...)
 	Player.super.init(self, ...)
-	self.color:set(1,1,0)
+	self.color:set(1,1,0,1)
 end
 
 function Player:update(...)

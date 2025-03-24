@@ -1,6 +1,6 @@
 local class = require 'ext.class'
 local vec3d = require 'vec-ffi.vec3d'
-local gl = require 'gl'
+local vec4d = require 'vec-ffi.vec4d'
 local cube = require 'chompman.cube'
 
 local Object = class()
@@ -20,12 +20,13 @@ function Object:init(args)
 	self.srcPos = vec3d(self.pos:unpack())
 	self.destPos = vec3d(self.pos:unpack())
 
-	self.color = args.color 
-		and vec3d(args.color)
-		or vec3d(
-			math.random(),
-			math.random(),
-			math.random()):normalize()
+	local v = args.color
+	and vec3d(args.color)
+	or vec3d(
+		math.random(),
+		math.random(),
+		math.random()):normalize()
+	self.color = vec4d(v.x, v.y, v.z, 1)
 end
 
 Object.CMD_LEFT = 1
@@ -120,17 +121,17 @@ function Object:doMove(dir)
 	self.destPos = self.pos + self.vel
 end
 
-function Object:getColor() 
-	return self.color 
+function Object:getColor()
+	return self.color
 end
 
 function Object:draw()
-	gl.glColor3d(self:getColor():unpack())
-	gl.glPushMatrix()
-	gl.glTranslated(self.game:transform(self.pos):unpack())
-	gl.glScaled(self.size:unpack())
+	solidTris.uniforms.color = {self:getColor():unpack()}
+	local push = mvProjMat:clone()
+	mvProjMat:applyTranslate(self.game:transform(self.pos):unpack())
+	mvProjMat:applyScale(self.size:unpack())
 	cube:draw()
-	gl.glPopMatrix()
+	mvProjMat:copy(push)
 end
 
 function Object:playSound(name, volume, pitch)
