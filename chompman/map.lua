@@ -143,7 +143,7 @@ function Map:init(args)
 	
 		self.pills = table()
 		for i=1,5 do
-			self.pills:insert(self.pellets:remove(math.random(1,#self.pills)))
+			self.pills:insert(self.pellets:remove(math.random(#self.pellets)))
 		end
 	end
 end
