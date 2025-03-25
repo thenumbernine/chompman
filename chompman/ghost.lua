@@ -1,5 +1,6 @@
 local table = require 'ext.table'
 local Object = require 'chompman.object'
+local vec3d = require 'vec-ffi.vec3d'
 
 local Ghost = Object:subclass()
 
