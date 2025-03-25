@@ -48,7 +48,7 @@ function Ghost:draw(...)
 			view.mvMat:applyScale(self.eyeSize,self.eyeSize,self.eyeSize)
 			cube:draw()
 			view.mvMat:set(push)
-		end	
+		end
 	else
 		Ghost.super.draw(self, ...)
 	end

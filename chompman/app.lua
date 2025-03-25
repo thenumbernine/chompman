@@ -3,7 +3,7 @@ local Game = require 'chompman.game'
 local gl = require 'gl'
 local ig = require 'imgui'
 local sdl = require 'ffi.req' 'sdl'
-local quat = require 'vec.quat'
+local quatd = require 'vec-ffi.quatd'
 local vec3d = require 'vec-ffi.vec3d'
 local vec4f = require 'vec-ffi.vec4f'
 local GLSceneObject = require 'gl.sceneobject'
@@ -17,21 +17,16 @@ App.title = 'ChompMan'
 function App:initGL()
 	App.super.initGL(self)
 
-	self.viewPos = vec3d(0, 0, 0)
-	self.viewAngle = 
-		quat():fromAngleAxis(0,0,1,10) *
-		quat():fromAngleAxis(1,0,0,45)
-
 	self.audio = Audio()	-- audio system
 	local SoundCache = require 'chompman.soundcache'
 	self.sounds = SoundCache()
 
 	do -- background music...
-		local bgMusicFileName = 'background.wav' 
-		if path(bgMusicFileName):exists() then 
+		local bgMusicFileName = 'background.wav'
+		if path(bgMusicFileName):exists() then
 			local AudioBuffer = require 'audio.buffer'
 			local AudioSource = require 'audio.source'
-			
+
 			local bgMusic = AudioBuffer(bgMusicFileName)	-- TODO specify by mod init or something
 			local bgAudioSource = AudioSource()
 			bgAudioSource:setBuffer(bgMusic)
@@ -42,11 +37,16 @@ function App:initGL()
 	end
 
 	self.game = Game{app=self}
-	self.viewDist = self.game.map.size.x
-	self.viewPos = vec3d(0,0,self.viewDist) + self.game.player.pos
 
---	gl.glEnable(gl.GL_CULL_FACE)
---	gl.glEnable(gl.GL_DEPTH_TEST)
+	self.view.pos = vec3d(0, 0, 0)
+	self.view.angle =
+		quatd():fromAngleAxis(0,0,1,10) *
+		quatd():fromAngleAxis(1,0,0,45)
+	self.viewDist = self.game.map.size.x
+	self.view.pos = vec3d(0,0,self.viewDist) + self.game.player.pos
+
+	gl.glEnable(gl.GL_CULL_FACE)
+	gl.glEnable(gl.GL_DEPTH_TEST)
 
 	local solidProgram = GLProgram{
 		version = 'latest',
@@ -142,13 +142,13 @@ function App:event(event)
 		elseif event[0].key.keysym.sym == sdl.SDLK_RSHIFT then
 			rightShiftDown = event[0].type == sdl.SDL_KEYDOWN
 		end
-			
+
 		local player = self.game.player
 		if player then
 			for key,dir in pairs(dirForKey) do
 				if event[0].key.keysym.sym == key then
 					if event[0].type == sdl.SDL_KEYDOWN then
-						player.cmd = bit.bor(player.cmd, dir) 
+						player.cmd = bit.bor(player.cmd, dir)
 					elseif event[0].type == sdl.SDL_KEYUP then
 						player.cmd = bit.band(player.cmd, bit.bnot(dir))
 					end
@@ -162,7 +162,7 @@ end
 function App:update()
 	mouse:update()
 
-	if not ig.igGetIO()[0].WantCaptureKeyboard then 
+	if not ig.igGetIO()[0].WantCaptureKeyboard then
 		if mouse.leftDragging then
 			--[[
 			if leftShiftDown or rightShiftDown then
@@ -171,37 +171,35 @@ function App:update()
 				local magn = mouse.deltaPos:length() * 1000
 				if magn > 0 then
 					local normDelta = mouse.deltaPos / magn
-					local r = quat():fromAngleAxis(-normDelta.y, normDelta.x, 0, -magn)
-					self.viewAngle = (self.viewAngle * r):normalize()
+					local r = quatd():fromAngleAxis(-normDelta.y, normDelta.x, 0, -magn)
+					self.view.angle = (self.view.angle * r):normalize()
 				end
 			end
 		end
 	end
 
-	self.viewPos = vec3d(
-		self.viewAngle:rotate{
-			0, 0, self.viewDist
-		}:unpack()
-	) + self.game.player.pos
+	self.view.pos = self.view.angle:rotate(
+			vec3d(0, 0, self.viewDist)
+		)
+		+ self.game.player.pos
 
 	gl.glClear(bit.bor(gl.GL_COLOR_BUFFER_BIT, gl.GL_DEPTH_BUFFER_BIT))
 
 	local ar = self.width / self.height
 	local znear = 1
 	local zfar = 1000
-	local tanFov = .5
-	view.projMat:setFrustum(-ar * znear * tanFov, ar * znear * tanFov, -znear * tanFov, znear * tanFov, znear, zfar)
+	self.view.znear = znear
+	self.view.zfar = zfar
+	self.view.fovY = 90 --local tanFov = .5
+	view:setupProjection(ar)
+	view:setupModelView()
 
-	local aa = self.viewAngle:toAngleAxis()
-	view.mvMat:applyRotate(-aa[4], aa[1], aa[2], aa[3])
-	view.mvMat:applyTranslate((-self.viewPos):unpack())
-
---	gl.glDisable(gl.GL_DEPTH_TEST)
---	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
---	gl.glEnable(gl.GL_BLEND)
+	gl.glDisable(gl.GL_DEPTH_TEST)
+	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+	gl.glEnable(gl.GL_BLEND)
 
 	if not self.sysLastTime then self.sysLastTime = os.clock() end
-	self.sysThisTime = os.clock()	
+	self.sysThisTime = os.clock()
 	self.sysDeltaTime = self.sysThisTime - self.sysLastTime
 	local fps = 1/self.sysDeltaTime
 	if not self.frameTimeLeft then self.frameTimeLeft = 0 end
@@ -210,7 +208,7 @@ function App:update()
 	while self.frameTimeLeft > self.dt do
 		self.frameTimeLeft = self.frameTimeLeft - self.dt
 		self.game:update(self.dt)
-	end	
+	end
 	self.sysLastTime = self.sysThisTime
 
 	self.game:draw()

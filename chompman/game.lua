@@ -15,16 +15,16 @@ Game.volume = 1
 Game.numGhosts = 4
 
 Game.pillTime = -1
-Game.pillDuration = 15 
+Game.pillDuration = 15
 
 function Game:init(args)
 	self.time = 0
 
 	self.app = args.app
-	
+
 	self.map = Map{game=self}
 
-	-- maybe this should go in App:init ... 
+	-- maybe this should go in App:init ...
 	local audio = self.app.audio
 	audio:setDistanceModel'linear clamped'
 	self.audioSourceIndex = 0
@@ -45,14 +45,14 @@ function Game:init(args)
 		pos = self.map.center + vec3d(self.map.colSize * 2, 0, 0),
 	}
 	self.players = table{self.player}
-	
+
 	local colors = {
 		vec3d(1,0,0),	-- red
-		vec3d(1,0,1),	-- pink 
-		vec3d(0,1,1),	-- cyan 
+		vec3d(1,0,1),	-- pink
+		vec3d(0,1,1),	-- cyan
 		vec3d(1,.5,0),	-- orange
 	}
-	
+
 	self.ghosts = range(self.numGhosts):map(function(i)
 		return Ghost{
 			game = self,
@@ -64,7 +64,7 @@ function Game:init(args)
 	--self.player:playSound'pacman_beginning'
 end
 
--- how far from the player points are to be pushed out of the way 
+-- how far from the player points are to be pushed out of the way
 Game.mvPushRadius = 3
 -- coeff of how smooth they are pushed in 3D space
 Game.push3DCoeff = 3
@@ -74,17 +74,17 @@ Game.push2DCoeff = 3
 Game.pushFwdCoeff = 1
 
 function Game:draw()
-	-- used for Game:transform	
-	self.viewFwd = -vec3d(self.app.viewAngle:zAxis():unpack())
+	-- used for Game:transform
+	self.viewFwd = -vec3d(self.app.view.angle:zAxis():unpack())
 	--[[ fixed radius
 	local screenPushRadius = .15
 	--]]
 	-- [[ this should be the screen distance of the modelview push radius at the player's distance from the camera
-	local viewToPlayer = self.player.pos - self.app.viewPos
+	local viewToPlayer = self.player.pos - self.app.view.pos
 	local playerDist = self.viewFwd:dot(viewToPlayer)
 	self.screenPushRadius = self.mvPushRadius / playerDist
 	--]]
-	
+
 	for _,obj in ipairs(self.objs) do
 		obj:draw()
 	end
@@ -93,46 +93,46 @@ function Game:draw()
 end
 
 function Game:transform(vtx)
-	
-	local distFromPlayer3DSq = (vtx - self.player.pos):lenSq()
-	local playerPosFwd = self.viewFwd:dot(self.player.pos - self.app.viewPos)
 
-	vtx = vtx - self.app.viewPos	-- vtx is now relative to the view position 
-	
-	local vtxFwd = self.viewFwd:dot(vtx)	-- vertex screen depth 
+	local distFromPlayer3DSq = (vtx - self.player.pos):lenSq()
+	local playerPosFwd = self.viewFwd:dot(self.player.pos - self.app.view.pos)
+
+	vtx = vtx - self.app.view.pos	-- vtx is now relative to the view position
+
+	local vtxFwd = self.viewFwd:dot(vtx)	-- vertex screen depth
 	vtx = vtx - self.viewFwd * vtxFwd	-- vtx is now in the view plane
 	vtx = vtx / vtxFwd
 	local screenDistSq = vtx:lenSq()
 
 	-- pushInfl is whether we want to push the point outward
-	--[[ C0-continuous 
+	--[[ C0-continuous
 	local pushExp = (distFromPlayer3DSq < self.mvPushRadius * self.mvPushRadius) and 0 or 1
 	--]]
 	-- [[ C-inf
 	local pushExp = .5 + .5 * math.tanh(self.push3DCoeff * (math.sqrt(distFromPlayer3DSq) - self.mvPushRadius))
 	pushExp = pushExp * (.5 + .5 * math.tanh(self.pushFwdCoeff * (vtxFwd - playerPosFwd)))
 	--]]
-	
+
 	local screenDist = math.sqrt(screenDistSq)
-		
+
 	-- scale back, but with the near-screenPushRadius points pushed back past screenPushRadius
 	-- using a ramp function
 	--[[ C0 option would be:
 	local scale = math.max(self.screenPushRadius, screenDist) / screenDist
 	--]]
 	-- [[ C-inf option:
-	local scale = (self.screenPushRadius 
-			+ math.log(1 
+	local scale = (self.screenPushRadius
+			+ math.log(1
 				+ math.exp(self.push2DCoeff * (screenDist - self.screenPushRadius))
 			) / self.push2DCoeff
 		) / screenDist
 	--]]
 	vtx = vtx * math.pow(scale, pushExp)
-	
-	vtx = vtx * vtxFwd	
+
+	vtx = vtx * vtxFwd
 	vtx = vtx + self.viewFwd * vtxFwd
 
-	vtx = vtx + self.app.viewPos
+	vtx = vtx + self.app.view.pos
 
 	return vtx
 end

@@ -10,9 +10,9 @@ function Player:init(...)
 end
 
 function Player:update(...)
-	if self.deadTime then 
+	if self.deadTime then
 		self.size = vec3d(1,1,1) * math.max(0, 1 - (self.game.time - self.deadTime))
-		return 
+		return
 	end
 	Player.super.update(self, ...)
 	if self.moveFrac == 0 then
@@ -26,7 +26,7 @@ function Player:update(...)
 			map.pellets:remove(pi)
 --			self:playSound'pacman_chomp'
 		end
-	
+
 		local pi = map.pills:find(nil, function(pos)
 			return math.floor(pos.x) == math.floor(self.pos.x)
 				and math.floor(pos.y) == math.floor(self.pos.y)
@@ -36,7 +36,7 @@ function Player:update(...)
 			map.pills:remove(pi)
 			self.game.pillTime = self.game.time + self.game.pillDuration
 		end
-	
+
 		if #map.pellets == 0
 		and #map.pills == 0
 		then
@@ -47,7 +47,7 @@ function Player:update(...)
 end
 
 function Player:die()
-	self.deadTime = self.game.time 
+	self.deadTime = self.game.time
 --	self:playSound'pacman_death'
 end
 

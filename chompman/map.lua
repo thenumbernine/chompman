@@ -50,7 +50,7 @@ local sides = table{
 
 function Map:init(args)
 	self.game = args.game
-	
+
 	self.center = (self.size-1)/self.colSize/2
 	for i=0,2 do self.center.s[i] = math.floor(self.center.s[i]) end
 	self.center = self.center * self.colSize + self.wallSize
@@ -126,7 +126,7 @@ function Map:init(args)
 							break
 						end
 					end
-					
+
 					if self.data[e] == self.TYPE_EMPTY
 					and (i % self.colSize == self.wallSize
 					or j % self.colSize == self.wallSize
@@ -134,12 +134,12 @@ function Map:init(args)
 					then
 						self.pellets:insert(vec3d(i,j,k))
 					end
-					
+
 					e = e + 1
 				end
 			end
 		end
-	
+
 		self.pills = table()
 		for i=1,5 do
 			self.pills:insert(self.pellets:remove(math.random(#self.pellets)))
@@ -150,9 +150,9 @@ end
 function Map:draw()
 	-- TODO - use call lists and do this as a vertex shader
 	-- or use draw lists
-	-- or something 
+	-- or something
 	if not self.lineStrips then
-		self.lineStrips = range(3):map(function(i) return table() end)	-- per axis 
+		self.lineStrips = range(3):map(function(i) return table() end)	-- per axis
 		for k=0,self.size.z-1 do
 			for j=0,self.size.y-1 do
 				for i=0,self.size.x-1 do
@@ -175,9 +175,9 @@ function Map:draw()
 					end
 				end
 			end
-		end	
+		end
 	end
-	
+
 -- [[ this now runs slow.  time to use a real buffer?
 	view.mvProjMat:mul4x4(view.projMat, view.mvMat)
 	solidLines.uniforms.mvProjMat = view.mvProjMat.ptr
@@ -205,7 +205,7 @@ function Map:draw()
 			local v = self.game:transform(pos)
 			view.mvMat:applyTranslate(v:unpack())
 			view.mvMat:applyScale(info.size, info.size, info.size)
-			cube:draw()	
+			cube:draw()
 			view.mvMat:copy(pushmat)
 		end
 	end
