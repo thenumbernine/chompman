@@ -39,6 +39,8 @@ local cube = {
 
 function cube:draw(normalScale)
 	--normalScale = normalScale or 1
+	view.mvProjMat:mul4x4(view.projMat, view.mvMat)
+	solidTris.uniforms.mvProjMat = view.mvProjMat.ptr
 	local vtxs = solidTris:beginUpdate()
 	for i=1,#self.vtxIndexes,4 do
 		-- TODO also normals?

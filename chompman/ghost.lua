@@ -1,7 +1,7 @@
-local class = require 'ext.class'
+local table = require 'ext.table'
 local Object = require 'chompman.object'
 
-local Ghost = class(Object)
+local Ghost = Object:subclass()
 
 function Ghost:update(...)
 	Ghost.super.update(self, ...)
@@ -43,11 +43,11 @@ function Ghost:draw(...)
 	if self.eyesOnly then
 		solidTris.uniforms.color = {1,1,1,1}
 		for _,ofs in ipairs{vec3d(-.25,0,.25),vec3d(.25,0,.25)} do
-			local push = mvProjMat:clone()
-			mvProjMat:applyTranslate(self.game:transform(self.pos + ofs):unpack())
-			mvProjMat:applyScale(self.eyeSize,self.eyeSize,self.eyeSize)
+			local push = view.mvMat:clone()
+			view.mvMat:applyTranslate(self.game:transform(self.pos + ofs):unpack())
+			view.mvMat:applyScale(self.eyeSize,self.eyeSize,self.eyeSize)
 			cube:draw()
-			mvProjMat:set(push)
+			view.mvMat:set(push)
 		end	
 	else
 		Ghost.super.draw(self, ...)

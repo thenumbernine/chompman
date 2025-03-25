@@ -1,4 +1,5 @@
 local class = require 'ext.class'
+local table = require 'ext.table'
 local vec3d = require 'vec-ffi.vec3d'
 local vec4d = require 'vec-ffi.vec4d'
 local cube = require 'chompman.cube'
@@ -127,11 +128,11 @@ end
 
 function Object:draw()
 	solidTris.uniforms.color = {self:getColor():unpack()}
-	local push = mvProjMat:clone()
-	mvProjMat:applyTranslate(self.game:transform(self.pos):unpack())
-	mvProjMat:applyScale(self.size:unpack())
+	local push = view.mvMat:clone()
+	view.mvMat:applyTranslate(self.game:transform(self.pos):unpack())
+	view.mvMat:applyScale(self.size:unpack())
 	cube:draw()
-	mvProjMat:copy(push)
+	view.mvMat:copy(push)
 end
 
 function Object:playSound(name, volume, pitch)

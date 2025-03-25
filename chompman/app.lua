@@ -1,7 +1,4 @@
-require 'ext'
-local class = require 'ext.class'
-local ImGuiApp = require 'imguiapp'
-local Mouse = require 'glapp.mouse'
+local path = require 'ext.path'
 local Game = require 'chompman.game'
 local gl = require 'gl'
 local ig = require 'imgui'
@@ -14,10 +11,7 @@ local GLProgram = require 'gl.program'
 
 local Audio = require 'audio'
 
-local mouse = Mouse()
-
-local App = ImGuiApp:subclass()
-App.viewUseGLMatrixMode = true
+local App = require 'imguiapp.withorbit'()
 App.title = 'ChompMan'
 
 function App:initGL()
@@ -34,7 +28,7 @@ function App:initGL()
 
 	do -- background music...
 		local bgMusicFileName = 'background.wav' 
-		if os.fileexists(bgMusicFileName ) then 
+		if path(bgMusicFileName):exists() then 
 			local AudioBuffer = require 'audio.buffer'
 			local AudioSource = require 'audio.source'
 			
@@ -51,8 +45,8 @@ function App:initGL()
 	self.viewDist = self.game.map.size.x
 	self.viewPos = vec3d(0,0,self.viewDist) + self.game.player.pos
 
-	gl.glEnable(gl.GL_CULL_FACE)
-	gl.glEnable(gl.GL_DEPTH_TEST)
+--	gl.glEnable(gl.GL_CULL_FACE)
+--	gl.glEnable(gl.GL_DEPTH_TEST)
 
 	local solidProgram = GLProgram{
 		version = 'latest',
@@ -103,9 +97,12 @@ void main() {
 		},
 	}
 
-	mvProjMat = require 'matrix.ffi'({4,4}, 'float'):zeros()
-	solidTris.uniforms.mvProjMat = mvProjMat.ptr
-	solidLines.uniforms.mvProjMat = mvProjMat.ptr
+	solidTris.uniforms.mvProjMat = self.view.mvProjMat.ptr
+	solidLines.uniforms.mvProjMat = self.view.mvProjMat.ptr
+
+-- global
+view = self.view
+mouse = self.mouse
 end
 
 local Object = require 'chompman.object'
@@ -193,16 +190,15 @@ function App:update()
 	local znear = 1
 	local zfar = 1000
 	local tanFov = .5
-	mvProjMat:setFrustum(-ar * znear * tanFov, ar * znear * tanFov, -znear * tanFov, znear * tanFov, znear, zfar)
+	view.projMat:setFrustum(-ar * znear * tanFov, ar * znear * tanFov, -znear * tanFov, znear * tanFov, znear, zfar)
 
 	local aa = self.viewAngle:toAngleAxis()
-	mvProjMat:applyRotate(-aa[4], aa[1], aa[2], aa[3])
-	mvProjMat:applyTranslate((-self.viewPos):unpack())
+	view.mvMat:applyRotate(-aa[4], aa[1], aa[2], aa[3])
+	view.mvMat:applyTranslate((-self.viewPos):unpack())
 
-	gl.glDisable(gl.GL_DEPTH_TEST)
-	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-	gl.glEnable(gl.GL_BLEND)
-	gl.glColor4d(1,1,1,.05)
+--	gl.glDisable(gl.GL_DEPTH_TEST)
+--	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+--	gl.glEnable(gl.GL_BLEND)
 
 	if not self.sysLastTime then self.sysLastTime = os.clock() end
 	self.sysThisTime = os.clock()	
