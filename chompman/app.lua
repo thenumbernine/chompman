@@ -11,7 +11,7 @@ local GLProgram = require 'gl.program'
 
 local Audio = require 'audio'
 
-local App = require 'imguiapp.withorbit'()
+local App = require 'imgui.appwithorbit'()
 App.title = 'ChompMan'
 
 function App:initGL()
