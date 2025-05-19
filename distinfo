@@ -1,0 +1,30 @@
+name = "chompman"
+files = {
+	["README.md"] = "chompman/README.md",
+	["chompman/app.lua"] = "chompman/chompman/app.lua",
+	["chompman/cube.lua"] = "chompman/chompman/cube.lua",
+	["chompman/game.lua"] = "chompman/chompman/game.lua",
+	["chompman/ghost.lua"] = "chompman/chompman/ghost.lua",
+	["chompman/map.lua"] = "chompman/chompman/map.lua",
+	["chompman/object.lua"] = "chompman/chompman/object.lua",
+	["chompman/player.lua"] = "chompman/chompman/player.lua",
+	["chompman/soundcache.lua"] = "chompman/chompman/soundcache.lua",
+	["pic1.png"] = "chompman/pic1.png",
+	["run.lua"] = "chompman/run.lua",
+	["sounds/pacman_beginning.wav"] = "chompman/sounds/pacman_beginning.wav",
+	["sounds/pacman_chomp.wav"] = "chompman/sounds/pacman_chomp.wav",
+	["sounds/pacman_death.wav"] = "chompman/sounds/pacman_death.wav",
+	["sounds/pacman_eatfruit.wav"] = "chompman/sounds/pacman_eatfruit.wav",
+	["sounds/pacman_eatghost.wav"] = "chompman/sounds/pacman_eatghost.wav",
+	["sounds/pacman_extrapac.wav"] = "chompman/sounds/pacman_extrapac.wav",
+	["sounds/pacman_intermission.wav"] = "chompman/sounds/pacman_intermission.wav",
+}
+deps = {
+	"audio",
+	"ext",
+	"gl",
+	"imgui",
+	"resourcecache",
+	"sdl",
+	"vec-ffi",
+}
