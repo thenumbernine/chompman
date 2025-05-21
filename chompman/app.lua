@@ -48,24 +48,10 @@ function App:initGL()
 	gl.glEnable(gl.GL_CULL_FACE)
 	gl.glEnable(gl.GL_DEPTH_TEST)
 
-	local solidProgram = GLProgram{
-		version = 'latest',
-		precision = 'best',
-		vertexCode = [[
-in vec3 vertex;
-uniform mat4 mvProjMat;
-void main() {
-	gl_Position = mvProjMat * vec4(vertex, 1.);
-}
-]],
-		fragmentCode = [[
-out vec4 fragColor;
-uniform vec4 color;
-void main() {
-	fragColor = color;
-}
-]],
-	}:useNone()
+	local solidProgram = GLProgram.make{
+		vertex = 'vec3',
+		color = {uniform = 'vec4'},
+	}
 
 	solidTris = GLSceneObject{
 		program = solidProgram,
